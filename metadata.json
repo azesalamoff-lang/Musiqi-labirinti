@@ -1,0 +1,8 @@
+{
+  "name": "Remix Musiqi Labirinti - Milli Musiqi Günü",
+  "description": "\"ASAN Könüllüləri\" Təşkilatı və 2 saylı Sumqayıt regional ASAN Xidmət mərkəzinin Milli Musiqi Gününə həsr olunmuş Musiqi Labirinti intellektual-musiqili yarışması",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
