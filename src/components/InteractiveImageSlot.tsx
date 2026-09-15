@@ -13,6 +13,7 @@ import {
   saveStoredImage, 
   deleteStoredImage 
 } from '../utils/imageStorage';
+import { useConfirm } from './ConfirmDialog';
 
 interface InteractiveImageSlotProps {
   imageKey: string;
@@ -42,6 +43,7 @@ export const InteractiveImageSlot: React.FC<InteractiveImageSlotProps> = ({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const confirm = useConfirm();
 
   // Load image on mount and listen to updates
   useEffect(() => {
@@ -88,7 +90,8 @@ export const InteractiveImageSlot: React.FC<InteractiveImageSlotProps> = ({
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Bu şəkli/loqonu silmək istəyirsiniz?')) {
+    const ok = await confirm('Bu şəkli/loqonu silmək istəyirsiniz?');
+    if (ok) {
       await deleteStoredImage(imageKey);
       setImageUrl(null);
     }

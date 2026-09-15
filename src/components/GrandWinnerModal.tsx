@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { Team } from '../types';
 import { Trophy, Crown, Sparkles, Award, RotateCcw, X } from 'lucide-react';
 import { playVictoryFanfare } from '../utils/soundEffects';
+import { useConfirm } from './ConfirmDialog';
 
 interface GrandWinnerModalProps {
   winner: Team;
@@ -17,6 +18,8 @@ export const GrandWinnerModal: React.FC<GrandWinnerModalProps> = ({
   onClose,
   onResetTournament
 }) => {
+  const confirm = useConfirm();
+
   useEffect(() => {
     playVictoryFanfare();
 
@@ -119,8 +122,14 @@ export const GrandWinnerModal: React.FC<GrandWinnerModalProps> = ({
           </button>
 
           <button
-            onClick={() => {
-              if (window.confirm('Yeni yarışma başlamaq istəyirsiniz? Bütün xallar sıfırlanacaq.')) {
+            onClick={async () => {
+              const ok = await confirm({
+                title: 'Yeni turnir başlat',
+                message: 'Yeni yarışma başlamaq istəyirsiniz? Bütün xallar sıfırlanacaq.',
+                confirmLabel: 'Bəli, başlat',
+                cancelLabel: 'İmtina'
+              });
+              if (ok) {
                 onResetTournament();
                 onClose();
               }

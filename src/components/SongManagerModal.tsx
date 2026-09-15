@@ -36,6 +36,7 @@ import {
   playSongAudioOrMelody, 
   stopAllPlayback 
 } from '../utils/soundEffects';
+import { useConfirm } from './ConfirmDialog';
 import { 
   STAGE_1_SONGS, 
   STAGE_2_SONGS, 
@@ -102,6 +103,7 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
 
   // Audio testing state
   const [playingSongId, setPlayingSongId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   // Backup Export & Import State
   const [isExportingBackup, setIsExportingBackup] = useState(false);
@@ -372,7 +374,13 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
   };
 
   const handleResetToDefaults = async () => {
-    if (window.confirm('Bütün musiqiləri və yüklənmiş MP3 faylları ilkin standart vəziyyətinə qaytarmaq istəyirsiniz?')) {
+    const ok = await confirm({
+      title: 'Standartlara qayıt',
+      message: 'Bütün musiqiləri və yüklənmiş MP3 faylları ilkin standart vəziyyətinə qaytarmaq istəyirsiniz? Bu geri qaytarıla bilməz.',
+      confirmLabel: 'Bəli, standartlara qaytar',
+      cancelLabel: 'İmtina'
+    });
+    if (ok) {
       stopAllPlayback();
       setPlayingSongId(null);
       await clearAllAudioTracks();
@@ -453,7 +461,12 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
     // Reset input value so same file can be re-selected if needed
     e.target.value = '';
 
-    if (!window.confirm(`"${file.name}" faylındakı mahnılar və audio fayllar bərpa edilsin? Mövcud mahnı siyahısı bu fayldakı ilə əvəzlənəcək.`)) {
+    if (!(await confirm({
+      title: 'Yedəyi bərpa et',
+      message: `"${file.name}" faylındakı mahnılar və audio fayllar bərpa edilsin? Mövcud mahnı siyahısı bu fayldakı ilə əvəzlənəcək.`,
+      confirmLabel: 'Bəli, bərpa et',
+      cancelLabel: 'İmtina'
+    }))) {
       return;
     }
 
@@ -535,7 +548,7 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
               type="file"
               ref={backupImportInputRef}
               onChange={handleImportBackupFileSelected}
-              accept=".zip,application/zip"
+              accept=".zip,application/zip,application/x-zip-compressed,application/octet-stream"
               className="hidden"
             />
 

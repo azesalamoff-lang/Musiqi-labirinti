@@ -22,6 +22,7 @@ import { InstallAppModal } from './components/InstallAppModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { TeamBuzzerClient } from './components/TeamBuzzerClient';
 import { ImageLightboxModal } from './components/ImageLightboxModal';
+import { useConfirm } from './components/ConfirmDialog';
 import { Download } from 'lucide-react';
 
 const STORAGE_KEYS = {
@@ -36,6 +37,8 @@ const STORAGE_KEYS = {
 };
 
 export default function App() {
+  const confirm = useConfirm();
+
   // Load state from localStorage or use defaults
   const [currentStage, setCurrentStage] = useState<TournamentStage>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.STAGE);
@@ -231,8 +234,14 @@ export default function App() {
   // Full tournament reset — resets scores/teams/stage only.
   // Custom song list and uploaded audio are intentionally left untouched;
   // use "Standartlara Qayıt" inside the Song Manager if you want to reset songs too.
-  const handleResetTournament = () => {
-    if (window.confirm('Turniri sıfırlamaq istəyirsiniz? Bütün komandaların xalları sıfırlanacaq və 1-ci turdan başlanacaq. (Mahnı siyahınız və yüklədiyiniz audio fayllar TOXUNULMAZ qalacaq.)')) {
+  const handleResetTournament = async () => {
+    const ok = await confirm({
+      title: 'Turniri sıfırla',
+      message: 'Bütün komandaların xalları sıfırlanacaq və 1-ci turdan başlanacaq. (Mahnı siyahınız və yüklədiyiniz audio fayllar TOXUNULMAZ qalacaq.)',
+      confirmLabel: 'Bəli, sıfırla',
+      cancelLabel: 'İmtina'
+    });
+    if (ok) {
       localStorage.removeItem(STORAGE_KEYS.STAGE);
       localStorage.removeItem(STORAGE_KEYS.TEAMS);
       localStorage.removeItem(STORAGE_KEYS.CHAMPION_ID);
