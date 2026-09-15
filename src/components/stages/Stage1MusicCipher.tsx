@@ -128,7 +128,9 @@ export const Stage1MusicCipher: React.FC<Stage1MusicCipherProps> = ({
         () => {
           setIsPlaying(false);
           setActiveNoteIdx(null);
-        }
+        },
+        activeSong.clipStartSeconds,
+        activeSong.clipDurationSeconds
       );
     }
   };

@@ -120,7 +120,9 @@ export const Stage2TimeDuel: React.FC<Stage2TimeDuelProps> = ({
         currentSong.id,
         currentSong.melodyNotes,
         undefined,
-        () => setIsPlaying(false)
+        () => setIsPlaying(false),
+        currentSong.clipStartSeconds,
+        currentSong.clipDurationSeconds
       );
     }
   };

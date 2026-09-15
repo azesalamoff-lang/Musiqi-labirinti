@@ -22,7 +22,8 @@ import {
   Download,
   FolderUp,
   Loader2,
-  FileArchive
+  FileArchive,
+  Scissors
 } from 'lucide-react';
 import { 
   saveAudioTrack, 
@@ -274,7 +275,9 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
       undefined,
       () => {
         setPlayingSongId(null);
-      }
+      },
+      song.clipStartSeconds,
+      song.clipDurationSeconds
     );
   };
 
@@ -820,6 +823,58 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
                       </button>
                     </div>
                   </div>
+
+                  {/* Clip / trim controls — only relevant once a custom MP3 is uploaded */}
+                  {song.hasCustomAudio && (
+                    <div className="w-full flex flex-wrap items-end gap-3 mt-3 pt-3 border-t border-slate-800/70">
+                      <div className="flex items-center gap-1.5 text-sky-400 pb-1.5">
+                        <Scissors className="w-3.5 h-3.5 shrink-0" />
+                        <span className="text-[10px] font-bold uppercase tracking-wide">Kəsmə</span>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-slate-400 block font-medium mb-0.5">
+                          Başlanğıc nöqtəsi (san.)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={song.clipStartSeconds ?? 0}
+                          onChange={(e) =>
+                            handleFieldChange(song.id, 'clipStartSeconds', Math.max(0, parseInt(e.target.value) || 0))
+                          }
+                          className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono focus:outline-none focus:border-sky-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-slate-400 block font-medium mb-0.5">
+                          Uzunluq (san.)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          placeholder="Sona kimi"
+                          value={song.clipDurationSeconds ?? ''}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            handleFieldChange(
+                              song.id,
+                              'clipDurationSeconds',
+                              raw === '' ? undefined : Math.max(0, parseInt(raw) || 0)
+                            );
+                          }}
+                          className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-sky-400"
+                        />
+                      </div>
+
+                      <span className="text-[10px] text-slate-500 pb-1.5">
+                        Məs: 45 və 20 → mahnı 45-ci saniyədən başlayıb 20 saniyə çalınacaq. "Səsləndir" düyməsi bu nöqtədən test edir.
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })

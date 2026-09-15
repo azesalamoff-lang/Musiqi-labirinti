@@ -39,6 +39,8 @@ export interface SongItem {
   audioUrl?: string; // Optional custom uploaded audio file
   hasCustomAudio?: boolean; // True if audio file stored in IndexedDB
   customAudioFileName?: string;
+  clipStartSeconds?: number; // Where playback starts within the uploaded MP3 (seconds)
+  clipDurationSeconds?: number; // How many seconds to play before auto-stopping (undefined/0 = play to the end)
   melodyNotes?: MusicalNote[]; // Built-in synthesized authentic melody
   year?: string;
   hint?: string;

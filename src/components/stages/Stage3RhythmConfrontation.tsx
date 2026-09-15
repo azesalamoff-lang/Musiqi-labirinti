@@ -168,7 +168,9 @@ export const Stage3RhythmConfrontation: React.FC<Stage3Props> = ({
         currentSong.id,
         currentSong.melodyNotes,
         undefined,
-        () => setIsPlayingMusic(false)
+        () => setIsPlayingMusic(false),
+        currentSong.clipStartSeconds,
+        currentSong.clipDurationSeconds
       );
     }
   };

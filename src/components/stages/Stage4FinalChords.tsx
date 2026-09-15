@@ -87,7 +87,9 @@ export const Stage4FinalChords: React.FC<Stage4Props> = ({
         song.id,
         song.melodyNotes,
         undefined,
-        () => setIsPlayingMelodyNow(false)
+        () => setIsPlayingMelodyNow(false),
+        song.clipStartSeconds,
+        song.clipDurationSeconds
       );
     }
   };

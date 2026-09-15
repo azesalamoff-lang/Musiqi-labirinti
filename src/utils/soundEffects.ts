@@ -333,7 +333,9 @@ export async function playSongAudioOrMelody(
   songId: string,
   melodyNotes?: MusicalNote[],
   onNoteChange?: (index: number) => void,
-  onComplete?: () => void
+  onComplete?: () => void,
+  clipStartSeconds?: number,
+  clipDurationSeconds?: number
 ): Promise<() => void> {
   stopAllPlayback();
 
@@ -344,12 +346,28 @@ export async function playSongAudioOrMelody(
       const audio = new Audio(customUrl);
       currentHtmlAudio = audio;
 
+      let clipTimeoutId: ReturnType<typeof setTimeout> | null = null;
+      const clearClipTimeout = () => {
+        if (clipTimeoutId) {
+          clearTimeout(clipTimeoutId);
+          clipTimeoutId = null;
+        }
+      };
+
+      const applyStartTime = () => {
+        if (clipStartSeconds && clipStartSeconds > 0) {
+          try { audio.currentTime = clipStartSeconds; } catch { /* ignore */ }
+        }
+      };
+
       audio.onended = () => {
+        clearClipTimeout();
         currentHtmlAudio = null;
         if (onComplete) onComplete();
       };
 
       audio.onerror = (e) => {
+        clearClipTimeout();
         console.warn('Custom audio playback error, falling back to synth melody', e);
         currentHtmlAudio = null;
         if (melodyNotes && melodyNotes.length > 0) {
@@ -359,9 +377,27 @@ export async function playSongAudioOrMelody(
         }
       };
 
+      // Some mobile browsers ignore currentTime set before metadata is loaded,
+      // so we (re)apply it once metadata is ready as a safety net.
+      audio.addEventListener('loadedmetadata', applyStartTime, { once: true });
+      applyStartTime();
+
       await audio.play();
+      applyStartTime();
+
+      // Optional clip length: auto-stop playback after N seconds
+      if (clipDurationSeconds && clipDurationSeconds > 0) {
+        clipTimeoutId = setTimeout(() => {
+          if (currentHtmlAudio === audio) {
+            audio.pause();
+            currentHtmlAudio = null;
+            if (onComplete) onComplete();
+          }
+        }, clipDurationSeconds * 1000);
+      }
 
       return () => {
+        clearClipTimeout();
         stopAllPlayback();
       };
     }
