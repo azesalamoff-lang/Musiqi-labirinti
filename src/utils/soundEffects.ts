@@ -354,12 +354,6 @@ export async function playSongAudioOrMelody(
         }
       };
 
-      const applyStartTime = () => {
-        if (clipStartSeconds && clipStartSeconds > 0) {
-          try { audio.currentTime = clipStartSeconds; } catch { /* ignore */ }
-        }
-      };
-
       audio.onended = () => {
         clearClipTimeout();
         currentHtmlAudio = null;
@@ -377,13 +371,46 @@ export async function playSongAudioOrMelody(
         }
       };
 
-      // Some mobile browsers ignore currentTime set before metadata is loaded,
-      // so we (re)apply it once metadata is ready as a safety net.
-      audio.addEventListener('loadedmetadata', applyStartTime, { once: true });
-      applyStartTime();
+      // If a clip start point is set, we must wait for the browser to know the
+      // media's metadata AND finish seeking BEFORE calling play(). Setting
+      // currentTime and immediately calling play() is a race condition: on many
+      // browsers the seek hasn't been applied yet, so playback silently starts
+      // from 0 and the trim point is ignored. Waiting here costs only a few
+      // milliseconds (the file is already local, from IndexedDB) and doesn't
+      // affect app speed.
+      if (clipStartSeconds && clipStartSeconds > 0) {
+        await new Promise<void>((resolve) => {
+          let settled = false;
+          const finish = () => {
+            if (settled) return;
+            settled = true;
+            audio.removeEventListener('seeked', onSeeked);
+            resolve();
+          };
+          const onSeeked = () => finish();
+
+          const doSeek = () => {
+            audio.addEventListener('seeked', onSeeked, { once: true });
+            try {
+              audio.currentTime = clipStartSeconds;
+            } catch {
+              finish();
+            }
+          };
+
+          if (audio.readyState >= 1 /* HAVE_METADATA */) {
+            doSeek();
+          } else {
+            audio.addEventListener('loadedmetadata', doSeek, { once: true });
+          }
+
+          // Safety net: never block playback for more than 400ms in case
+          // 'seeked' doesn't fire (e.g. corrupt file, out-of-range value).
+          setTimeout(finish, 400);
+        });
+      }
 
       await audio.play();
-      applyStartTime();
 
       // Optional clip length: auto-stop playback after N seconds
       if (clipDurationSeconds && clipDurationSeconds > 0) {
