@@ -496,12 +496,10 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
   return (
     <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       <div className="bg-slate-900 border border-slate-700 w-full max-w-5xl rounded-3xl p-5 sm:p-7 shadow-2xl relative my-auto max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95">
-        {/* Close button */}
+        {/* Close button — now always saves before closing, so edits are never lost */}
         <button
-          onClick={() => {
-            stopAllPlayback();
-            onClose();
-          }}
+          onClick={handleSaveAll}
+          title="Bağla (dəyişikliklər avtomatik yadda saxlanılır)"
           className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />

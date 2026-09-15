@@ -22,7 +22,6 @@ import { InstallAppModal } from './components/InstallAppModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { TeamBuzzerClient } from './components/TeamBuzzerClient';
 import { ImageLightboxModal } from './components/ImageLightboxModal';
-import { clearAllAudioTracks } from './utils/audioStorage';
 import { Download } from 'lucide-react';
 
 const STORAGE_KEYS = {
@@ -229,17 +228,15 @@ export default function App() {
     );
   };
 
-  // Full tournament reset
-  const handleResetTournament = async () => {
-    if (window.confirm('Turniri tamamilə sıfırlamaq və 1-ci turdan başlamaq istəyirsiniz?')) {
-      localStorage.clear();
-      await clearAllAudioTracks();
+  // Full tournament reset — resets scores/teams/stage only.
+  // Custom song list and uploaded audio are intentionally left untouched;
+  // use "Standartlara Qayıt" inside the Song Manager if you want to reset songs too.
+  const handleResetTournament = () => {
+    if (window.confirm('Turniri sıfırlamaq istəyirsiniz? Bütün komandaların xalları sıfırlanacaq və 1-ci turdan başlanacaq. (Mahnı siyahınız və yüklədiyiniz audio fayllar TOXUNULMAZ qalacaq.)')) {
+      localStorage.removeItem(STORAGE_KEYS.STAGE);
+      localStorage.removeItem(STORAGE_KEYS.TEAMS);
+      localStorage.removeItem(STORAGE_KEYS.CHAMPION_ID);
       setTeams(INITIAL_TEAMS);
-      setStage1Songs(STAGE_1_SONGS);
-      setStage2Songs(STAGE_2_SONGS);
-      setStage3Songs(STAGE_3_SONGS);
-      setFinalist1Songs(STAGE_4_FINALIST_1_SONGS);
-      setFinalist2Songs(STAGE_4_FINALIST_2_SONGS);
       setChampionTeamId(null);
       setCurrentStage(1);
     }
