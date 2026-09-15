@@ -23,7 +23,9 @@ import {
   FolderUp,
   Loader2,
   FileArchive,
-  Scissors
+  Scissors,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { 
   saveAudioTrack, 
@@ -67,6 +69,13 @@ const STAGE_1_DEFAULT_CATEGORIES = [
   'Kino musiqiləri',
   'Xalq mahnıları'
 ];
+
+// Stage 1 is a category grid: gameplay reads each song's position from
+// numberInRound, sorted WITHIN its category (see Stage1MusicCipher). This
+// helper normalizes the old '80-ci illər' category name so grouping/sorting
+// stays consistent everywhere it's used.
+const getStage1Category = (s: SongItem) =>
+  s.category === '80-ci illər' ? 'Retro mahnılar' : (s.category || 'Retro mahnılar');
 
 export const SongManagerModal: React.FC<SongManagerModalProps> = ({
   stage1Songs,
@@ -143,11 +152,24 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
 
   const { list: currentList, setter: currentSetter, currentKey } = getCurrentSongsList();
 
-  const filteredSongs = currentList.filter(s => 
+  const searchedSongs = currentList.filter(s => 
     s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.artistOrComposer.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.category && s.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  // For Stage 1, show songs grouped by category and sorted by numberInRound so
+  // the on-screen order always matches the actual in-game order (and so the
+  // up/down reorder buttons visibly move a song within its category group).
+  // Stages 2/3/4 play strictly in array order, so we keep that order as-is.
+  const filteredSongs = activeTab === 1
+    ? searchedSongs.slice().sort((a, b) => {
+        const catA = getStage1Category(a);
+        const catB = getStage1Category(b);
+        if (catA !== catB) return catA.localeCompare(catB);
+        return (a.numberInRound || 0) - (b.numberInRound || 0);
+      })
+    : searchedSongs;
 
   const handleFieldChange = (id: string, field: keyof SongItem, value: any) => {
     currentSetter(prev => prev.map(item => {
@@ -156,6 +178,63 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
       }
       return item;
     }));
+  };
+
+  // --- Playback order editing ---
+  // Stage 1 is a category grid: gameplay order = numberInRound, sorted WITHIN
+  // each category. Stages 2/3/4 play strictly in array order (songs[index]),
+  // so there "order" = the array position itself.
+  const isSearchActive = searchQuery.trim().length > 0;
+
+  // Returns the ordered sibling list a song belongs to, and its position in it.
+  // Used both to render the current position and to compute swaps.
+  const getOrderContext = (song: SongItem) => {
+    if (activeTab === 1) {
+      const category = getStage1Category(song);
+      const siblings = currentList
+        .filter(s => getStage1Category(s) === category)
+        .slice()
+        .sort((a, b) => (a.numberInRound || 0) - (b.numberInRound || 0));
+      return { siblings, index: siblings.findIndex(s => s.id === song.id) };
+    }
+    return { siblings: currentList, index: currentList.findIndex(s => s.id === song.id) };
+  };
+
+  const handleMoveSong = (songId: string, direction: 'up' | 'down') => {
+    if (activeTab === 1) {
+      currentSetter(prev => {
+        const song = prev.find(s => s.id === songId);
+        if (!song) return prev;
+        const category = getStage1Category(song);
+        const siblings = prev
+          .filter(s => getStage1Category(s) === category)
+          .slice()
+          .sort((a, b) => (a.numberInRound || 0) - (b.numberInRound || 0));
+        const idx = siblings.findIndex(s => s.id === songId);
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+        if (idx === -1 || swapIdx < 0 || swapIdx >= siblings.length) return prev;
+
+        const a = siblings[idx];
+        const b = siblings[swapIdx];
+        const aNum = a.numberInRound ?? (idx + 1);
+        const bNum = b.numberInRound ?? (swapIdx + 1);
+
+        return prev.map(item => {
+          if (item.id === a.id) return { ...item, numberInRound: bNum };
+          if (item.id === b.id) return { ...item, numberInRound: aNum };
+          return item;
+        });
+      });
+    } else {
+      currentSetter(prev => {
+        const idx = prev.findIndex(s => s.id === songId);
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+        if (idx === -1 || swapIdx < 0 || swapIdx >= prev.length) return prev;
+        const copy = [...prev];
+        [copy[idx], copy[swapIdx]] = [copy[swapIdx], copy[idx]];
+        return copy;
+      });
+    }
   };
 
   // Move song to another stage or sub-tab
@@ -683,6 +762,10 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
             filteredSongs.map((song, idx) => {
               const isPlaying = playingSongId === song.id;
               const isJustAdded = lastAddedId === song.id;
+              const { index: orderIndex, siblings: orderSiblings } = getOrderContext(song);
+              const canReorder = !isSearchActive;
+              const isFirstInOrder = orderIndex <= 0;
+              const isLastInOrder = orderIndex === orderSiblings.length - 1;
 
               return (
                 <div
@@ -709,6 +792,26 @@ export const SongManagerModal: React.FC<SongManagerModalProps> = ({
                         <span className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs font-bold flex items-center justify-center shrink-0">
                           {idx + 1}
                         </span>
+                        <div className="flex flex-col shrink-0" title={!canReorder ? 'Sıralamaq üçün axtarışı təmizləyin' : undefined}>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveSong(song.id, 'up')}
+                            disabled={!canReorder || isFirstInOrder}
+                            className="w-5 h-4 flex items-center justify-center rounded-t bg-slate-800 border border-slate-700 border-b-0 text-slate-400 hover:text-amber-300 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 disabled:hover:text-slate-400 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                            title="Yuxarı köçür (əvvəl çalınsın)"
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveSong(song.id, 'down')}
+                            disabled={!canReorder || isLastInOrder}
+                            className="w-5 h-4 flex items-center justify-center rounded-b bg-slate-800 border border-slate-700 text-slate-400 hover:text-amber-300 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 disabled:hover:text-slate-400 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                            title="Aşağı köçür (sonra çalınsın)"
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Song Title */}
